@@ -9,54 +9,135 @@ public class Game : MonoBehaviour
     public Color warm = new Color(0, 0, 0, 1);
     public Color cold = new Color(0, 0, 0, 1);
 
-    void Start()
+    public int activeIndex;     // Active index and its property will change the activeRow if itself is changed
+    public int activeIndexProperty
     {
-        GuessWord();
+        get
+        {
+            return activeIndex;
+        }
+
+        set
+        {
+            activeIndex = Mathf.Clamp(value, 0, rows.Length - 1);
+            activeRow = rows[activeIndex];
+            foreach (Row row in rows)
+            {
+                row.SetState(false);
+            }
+            activeRow.SetState(true);
+        }
     }
 
-    void Update()
+    public Color hot, warm, cold;   //Colour palette
+
+    public bool gameRunning = true;     //Stop the game from running if win/lose conditions are triggered
+
+    void Start()
     {
-        if (Input.GetKeyDown(KeyCode.Return))
+        //GuessWord();
+
+        activeIndexProperty = 0;
+
+        word = WordMaster.PopWord();
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Return))   //Submit a guess when I press ENTER (Return)
         {
             GuessWord();
         }
-    }
 
-    public void GuessWord()
-    {
-        string guess = activeRow.GetWord();
-        if (guess.Contains(" ") || guess.Length != 5)
+        //Move forward & back on the activeRow if I press (SHIFT) TAB
+        if (Input.GetKeyDown(KeyCode.Tab))
         {
-            print("Invalid input");
-            // Invalid input UI display?
-            return;
-        }
-
-        guess.ToUpper();
-
-        print($"Comparing the word '{word}' with the word '{guess}'");
-
-        for (int i = 0; i < 5; i++)
-        {
-            print($"Comparing: {word[i]} and {guess[i]}");
-
-            if (word[i] == guess[i])
+            if (Input.GetKey(KeyCode.LeftShift))
             {
-                print($"<color=green>They are the same</color>");
-                activeRow.PushColor(i, hot);
-            }
-
-            else if (word.Contains(guess[i]))
-            {
-                print($"<color=yellow>The letter is in the word but wrong position</color>");
-                activeRow.PushColor(i, warm);
+                UINavigation.GetPrevious();
             }
 
             else
             {
-                print($"<color=black>The letter is not in the word</color>");
-                activeRow.PushColor(i, cold);
+                UINavigation.GetNext();
             }
         }
+
+        //Move back (in addition to deleting content) if I press BACKSPACE
+        if (Input.GetKeyDown(KeyCode.Backspace))
+        {
+            UINavigation.GetPrevious();
+        }
+    }
+
+    //Retrieve the letters of the currently active row
+    public void GuessWord()
+    {
+        if (!gameRunning)
+        {
+            return;
+        }
+
+        string guess = activeRow.GetWord();
+
+        if (guess.Contains('-'))    //Catch the function if we guess a word that contains a '-' (aka not 5 letters)
+        {
+            UINavigation.SelectCell(activeRow.cells[0]);
+            return;
+        }
+
+        print($"Comparing the word {word} with the word {guess}");
+
+        for (int i = 0; i < 5; i++)
+        {
+            print($"Comparing {word[i]} against {guess[i]}");
+
+            if (word[i] == guess[i])    //Run when letter is correct and in correct spot
+            {
+                //print("<color=green>They match!</color>");
+                activeRow.PushColour(i, hot, Cell.colourStates.Hot);
+            }
+
+            else if (word.Contains(guess[i]))   //Run when letter is in the word but wrong spot
+            {
+                //print($"<color=yellow> The word contains the letter {guess[i]} </color>");
+                activeRow.PushColour(i, warm, Cell.colourStates.Warm);
+            }
+
+            else    //Run when letter doesn't exist in word
+            {
+                //print($"<color=red> The word does not contain the letter {guess[i]} </color>");
+                activeRow.PushColour(i, cold, Cell.colourStates.Cold);
+            }
+        }
+
+        if (guess == word)  //Win condition
+        {
+            print("You Win!");
+            gameRunning = false;
+
+            foreach (Cell cell in activeRow.cells)
+            {
+                cell.UIField.readOnly = true;
+            }
+
+            return;
+        }
+
+        if (activeIndexProperty >= rows.Length - 1)     //Lose condition
+        {
+            print("You Lose!");
+            gameRunning = false;
+
+            foreach (Cell cell in activeRow.cells)
+            {
+                cell.UIField.readOnly = true;
+            }
+
+            return;
+        }
+
+        activeIndexProperty += 1;
+        UINavigation.SelectCell(activeRow.cells[0]);
     }
 }

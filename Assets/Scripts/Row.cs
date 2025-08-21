@@ -2,36 +2,36 @@ using UnityEngine;
 
 public class Row : MonoBehaviour
 {
-    private Cell[] myCells;
+    public Cell[] cells;    //Get all of the cells in a list
 
     private void Awake()
     {
-        myCells = GetComponentsInChildren<Cell>();
+        cells = GetComponentsInChildren<Cell>();
     }
 
-    void Start()
-    {
-        
-    }
-
-    void Update()
-    {
-        
-    }
-
-    public string GetWord()
+    public string GetWord()     //Combine all the letters into a word
     {
         string word = "";
 
-        foreach (Cell cell in myCells)
+        foreach (Cell cell in cells)
         {
             word += cell.GetLetter();
         }
+
         return word;
     }
 
-    public void PushColor(int index, Color newColor)
+    public void PushColour(int index, Color newColor, Cell.colourStates newState)   //Receive a colour and push it into one of the cells
     {
-        myCells[index].PushColor(newColor);
+        cells[index].PushColour(newColor, newState);
+    }
+
+    //Turn the row and all of its cells on/off (triggered by the Game's activeIndexProperty)
+    public void SetState(bool state)
+    {
+        foreach (Cell cell in cells)
+        {
+            cell.SetState(state);
+        }
     }
 }
